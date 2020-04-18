@@ -1,4 +1,5 @@
 /* This library is released under the MIT license, see https://github.com/tehnokv/picojs */
+/* eslint-disable no-mixed-spaces-and-tabs */
 const pico = {}
 
 pico.unpack_cascade = function(bytes)
