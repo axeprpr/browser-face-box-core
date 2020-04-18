@@ -1,165 +1,181 @@
-// const { createCanvas, loadImage } = require("canvas");
-require("./pico.js");
-/*
-  1. load the face-detection cascade
-*/
-var facefinder_classify_region = function (r, c, s, pixels, ldim) {
+const { pico } = require("./pico.js");
+
+let facefinderClassifyRegion = function fallbackClassifier() {
   return -1.0;
 };
-var cascadeurl =
-  window.location.origin + window.location.pathname + "facefinder.bin";
-fetch(cascadeurl).then(function (response) {
-  response.arrayBuffer().then(function (buffer) {
-    var bytes = new Int8Array(buffer);
-    facefinder_classify_region = pico.unpack_cascade(bytes);
-    console.log("* facefinder loaded");
-  });
-});
-/*
-  2. prepare the image and canvas context
-*/
-// const getImage = async (source) => {
-//   const image = await loadImage(source);
-//   const { width, height } = image;
-//   const canvas = createCanvas(width, height);
-//   const ctx = canvas.getContext("2d");
-//   ctx.drawImage(image, 0, 0);
-//   return { image, ctx };
-// };
+
+let cascadeLoadPromise = null;
+let cascadeLoaded = false;
+
+const CASCADE_FILE = "facefinder.bin";
+
+function getCascadeUrl() {
+  const baseUrl = process.env.BASE_URL || "/";
+  return `${baseUrl}${CASCADE_FILE}`;
+}
+
+async function initFaceDetector() {
+  if (cascadeLoaded) {
+    return true;
+  }
+  if (cascadeLoadPromise) {
+    return cascadeLoadPromise;
+  }
+
+  cascadeLoadPromise = fetch(getCascadeUrl())
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`Failed to load cascade: HTTP ${response.status}`);
+      }
+      return response.arrayBuffer();
+    })
+    .then((buffer) => {
+      const bytes = new Int8Array(buffer);
+      facefinderClassifyRegion = pico.unpack_cascade(bytes);
+      cascadeLoaded = true;
+      return true;
+    })
+    .catch((error) => {
+      cascadeLoadPromise = null;
+      throw error;
+    });
+
+  return cascadeLoadPromise;
+}
+
 const getImage = async (source) => {
   return new Promise((resolve, reject) => {
-    let image = new Image();
-    image.src = source;
+    const image = new Image();
+    image.onerror = () => reject(new Error("Image decode failed"));
     image.onload = () => {
-      let canvas = document.createElement("canvas");
+      const canvas = document.createElement("canvas");
       canvas.width = image.width;
       canvas.height = image.height;
       const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        reject(new Error("Failed to acquire canvas context"));
+        return;
+      }
       ctx.drawImage(image, 0, 0);
-      resolve({ image, ctx })
+      resolve({ image, ctx });
     };
+    image.src = source;
   });
 };
-// const getImage = async (source) => {
-//   return new Promise((resolve, reject) => {
-//     let image = new Image();
-//     let height, width, rgba;
-//     image.src = source;
-//     image.onload = () => {
-//       let b64 = source.slice(source.indexOf(",") + 1);
-//       let str = atob(b64);
-//       let arr = str.split("").map(function (e) {
-//         return e.charCodeAt(0);
-//       });
-//       rgba = new Uint8ClampedArray(arr);
-//       height = image.height
-//       width = image.width
-//       console.log( rgba, height, width )
-//       return { rgba, height, width }
-//     };
-//   });
-// };
-/*
-  3. transform an RGBA image to grayscale
-*/
-const rgba_to_grayscale = (rgba, nrows, ncols) => {
-  var gray = new Uint8Array(nrows * ncols);
-  for (var r = 0; r < nrows; ++r)
-    for (var c = 0; c < ncols; ++c)
-      // gray = 0.2*red + 0.7*green + 0.1*blue
+
+const rgbaToGrayscale = (rgba, nrows, ncols) => {
+  const gray = new Uint8Array(nrows * ncols);
+  for (let r = 0; r < nrows; ++r) {
+    for (let c = 0; c < ncols; ++c) {
       gray[r * ncols + c] =
         (2 * rgba[r * 4 * ncols + 4 * c + 0] +
           7 * rgba[r * 4 * ncols + 4 * c + 1] +
           1 * rgba[r * 4 * ncols + 4 * c + 2]) /
         10;
+    }
+  }
   return gray;
 };
-/*
-  4. main function
-*/
+
 const getDefaultParams = (width, height) => {
   const factor = {
     shiftfactor: 0.1,
     scalefactor: 1.1,
   };
   const size = {
-    minsize: (Math.min(width, height) * 0.07) >> 0, // minimum size of a face
-    maxsize: (Math.max(width, height) * 3) >> 0, // maximum size of a face
+    minsize: Math.max(24, (Math.min(width, height) * 0.07) >> 0),
+    maxsize: (Math.max(width, height) * 3) >> 0,
   };
   return Object.assign(factor, size);
 };
 
-const draw_frame = async function (det, canvas_id) {
-  var ctx = document.getElementById(canvas_id).getContext("2d");
-  if (ctx && ctx.canvas) {
-    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-  } else {
+function pickBestDetection(detections, qThreshold) {
+  const matched = detections.filter((item) => item[3] > qThreshold);
+  if (matched.length === 0) {
+    return null;
+  }
+
+  return matched.reduce((best, current) => {
+    if (!best) {
+      return current;
+    }
+    return current[3] > best[3] ? current : best;
+  }, null);
+}
+
+const draw_frame = function drawFrame(det, canvasId) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) {
     return;
   }
+  const ctx = canvas.getContext("2d");
+  if (!ctx || !ctx.canvas) {
+    return;
+  }
+
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
   if (!det) {
     return;
   }
+
   ctx.beginPath();
   ctx.lineWidth = 3;
-  ctx.strokeStyle = "DeepSkyBlue"; //red    DodgerBlue,  Silver AliceBlue , RoyalBlue  Coral
-  var x, y, r, cap_len, yfix;
-  x = det[1];
-  y = det[0];
-  r = det[2] / 2 + 2;
-  cap_len = 20;
-  yfix = 1.1;
+  ctx.strokeStyle = "DeepSkyBlue";
+  const x = det[1];
+  const y = det[0];
+  const r = det[2] / 2 + 2;
+  const capLen = 20;
+  const yFix = 1.1;
   ctx.moveTo(x - r, y - r);
-  ctx.lineTo(x - r + cap_len, y - r);
-  ctx.moveTo(x - r, y - r - yfix);
-  ctx.lineTo(x - r, y - r + cap_len + yfix);
+  ctx.lineTo(x - r + capLen, y - r);
+  ctx.moveTo(x - r, y - r - yFix);
+  ctx.lineTo(x - r, y - r + capLen + yFix);
 
   ctx.moveTo(x + r, y - r);
-  ctx.lineTo(x + r - cap_len, y - r);
-  ctx.moveTo(x + r, y - r - yfix);
-  ctx.lineTo(x + r, y - r + cap_len + yfix);
+  ctx.lineTo(x + r - capLen, y - r);
+  ctx.moveTo(x + r, y - r - yFix);
+  ctx.lineTo(x + r, y - r + capLen + yFix);
 
   ctx.moveTo(x - r, y + r);
-  ctx.lineTo(x - r + cap_len, y + r);
-  ctx.moveTo(x - r, y + r + yfix);
-  ctx.lineTo(x - r, y + r - cap_len + yfix);
+  ctx.lineTo(x - r + capLen, y + r);
+  ctx.moveTo(x - r, y + r + yFix);
+  ctx.lineTo(x - r, y + r - capLen + yFix);
 
   ctx.moveTo(x + r, y + r);
-  ctx.lineTo(x + r - cap_len, y + r);
-  ctx.moveTo(x + r, y + r + yfix);
-  ctx.lineTo(x + r, y + r - cap_len + yfix);
+  ctx.lineTo(x + r - capLen, y + r);
+  ctx.moveTo(x + r, y + r + yFix);
+  ctx.lineTo(x + r, y + r - capLen + yFix);
   ctx.stroke();
 };
 
-const face_detection = async (img, option, qThreshold = 5.0, IoU = 0.2) => {
-  let { image, ctx } = await getImage(img);
-  let { width, height } = image;
-  // re-draw the image to clear previous results and get its RGBA pixel data
+const face_detection = async (
+  img,
+  option = {},
+  qThreshold = 5.0,
+  iouThreshold = 0.2
+) => {
+  await initFaceDetector();
 
-  var rgba = ctx.getImageData(0, 0, width, height).data;
-  // let { rgba, height, width } = await getImage(img);
+  const { image, ctx } = await getImage(img);
+  const { width, height } = image;
 
-  // prepare input to `run_cascade`
+  const rgba = ctx.getImageData(0, 0, width, height).data;
   const imageParams = {
-    pixels: rgba_to_grayscale(rgba, height, width),
+    pixels: rgbaToGrayscale(rgba, height, width),
     nrows: height,
     ncols: width,
     ldim: width,
   };
+
   const params = Object.assign(getDefaultParams(width, height), option);
-  // run the cascade over the image
-  // dets is an array that contains (r, c, s, q) quadruplets
-  // (representing row, column, scale and detection score)
-  dets = pico.run_cascade(imageParams, facefinder_classify_region, params);
-  // cluster the obtained detections
-  dets = pico.cluster_detections(dets, IoU); // set IoU threshold to 0.2
-  // return results
-  dets = dets.filter((e) => e[3] > qThreshold);
-  if ((dets.length = 1)) {
-    return dets[0];
-  } else {
-    return null;
-  }
+  let detections = pico.run_cascade(imageParams, facefinderClassifyRegion, params);
+  detections = pico.cluster_detections(detections, iouThreshold);
+
+  return pickBestDetection(detections, qThreshold);
 };
 
-exports.face_detection = face_detection;
-exports.draw_frame = draw_frame;
+module.exports = {
+  initFaceDetector,
+  face_detection,
+  draw_frame,
+};
