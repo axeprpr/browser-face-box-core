@@ -1,4 +1,4 @@
-const { pico } = require("./pico.js");
+import { pico } from "./pico.js";
 
 let facefinderClassifyRegion = function fallbackClassifier() {
   return -1.0;
@@ -10,7 +10,7 @@ let cascadeLoaded = false;
 const CASCADE_FILE = "facefinder.bin";
 
 function getCascadeUrl() {
-  const baseUrl = process.env.BASE_URL || "/";
+  const baseUrl = window.__APP_BASE_URL__ || "/";
   return `${baseUrl}${CASCADE_FILE}`;
 }
 
@@ -174,7 +174,7 @@ const face_detection = async (
   return pickBestDetection(detections, qThreshold);
 };
 
-module.exports = {
+export {
   initFaceDetector,
   face_detection,
   draw_frame,

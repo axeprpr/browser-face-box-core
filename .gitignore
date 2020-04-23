@@ -6,7 +6,6 @@ playwright-report
 
 
 # lock file
-package-lock.json
 yarn.lock
 
 # local env files

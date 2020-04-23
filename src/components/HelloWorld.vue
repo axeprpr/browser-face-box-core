@@ -15,8 +15,7 @@
 
 <script>
 import { initFaceDetector, face_detection, draw_frame } from "../utils/face.js";
-
-const WebCamera = require("webcamjs");
+import WebCamera from "webcamjs";
 
 export default {
   name: "picojs",
@@ -42,7 +41,7 @@ export default {
   mounted() {
     this.camInit();
   },
-  beforeDestroy() {
+  beforeUnmount() {
     this.camStop();
     draw_frame(null, "ctx");
   },

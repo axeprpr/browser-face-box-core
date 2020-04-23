@@ -1,7 +1,7 @@
 const { test, expect } = require("@playwright/test");
 
 test("app shell and detector status render", async ({ page, context }) => {
-  await context.grantPermissions(["camera"], { origin: "http://127.0.0.1:3317" });
+  await context.grantPermissions(["camera"], { origin: "http://127.0.0.1:43317" });
 
   await page.goto("/");
 

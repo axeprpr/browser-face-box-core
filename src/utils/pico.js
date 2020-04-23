@@ -200,4 +200,4 @@ pico.instantiate_detection_memory = function(size)
 	return update_memory;
 }
 
-module.exports = { pico }
+export { pico }

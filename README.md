@@ -1,6 +1,6 @@
 # vue-picojs
 
-Vue 2 + pico.js browser face detection demo with webcam capture.
+Vue 3 + Vite + pico.js browser face detection demo with webcam capture.
 
 ## Requirements
 
@@ -17,10 +17,10 @@ npm install
 ## Run in development
 
 ```bash
-npm run serve
+npm run dev
 ```
 
-Open `http://localhost:8080` and allow camera access.
+Open `http://localhost:5173` and allow camera access.
 
 ## Quality gate
 
@@ -39,6 +39,7 @@ npm run test:e2e
 
 ```bash
 npm run build
+npm run preview
 ```
 
 Build output is generated in `dist/`.

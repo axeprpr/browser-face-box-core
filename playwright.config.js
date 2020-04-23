@@ -7,7 +7,7 @@ module.exports = defineConfig({
     timeout: 5000,
   },
   use: {
-    baseURL: "http://127.0.0.1:3317",
+    baseURL: "http://127.0.0.1:43317",
     headless: true,
     launchOptions: {
       args: [
@@ -17,8 +17,8 @@ module.exports = defineConfig({
     },
   },
   webServer: {
-    command: "npm run serve -- --host 127.0.0.1 --port 3317",
-    url: "http://127.0.0.1:3317",
+    command: "npm run dev -- --host 127.0.0.1 --port 43317",
+    url: "http://127.0.0.1:43317",
     timeout: 120000,
     reuseExistingServer: false,
   },
