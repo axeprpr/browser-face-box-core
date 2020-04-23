@@ -28,6 +28,13 @@ Open `http://localhost:8080` and allow camera access.
 npm run lint
 ```
 
+## E2E smoke test
+
+```bash
+npx playwright install chromium
+npm run test:e2e
+```
+
 ## Production build
 
 ```bash
@@ -41,3 +48,7 @@ Build output is generated in `dist/`.
 - If you see cascade loading errors, verify `public/facefinder.bin` exists in deployment assets.
 - If no face box is shown, check browser camera permission and HTTPS policy on your target host.
 - If using a non-root deployment path, keep Vue `BASE_URL` aligned with actual public path so `facefinder.bin` can be fetched correctly.
+
+## Migration plan
+
+- See `VUE3_MIGRATION_PLAN.md` for phased Vue 3 + Vite migration execution details.
