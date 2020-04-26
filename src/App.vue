@@ -1,19 +1,19 @@
 <template>
   <main id="app">
     <h1 class="title">Browser Face Detection</h1>
-    <HelloWorld />
+    <FaceDetectionView />
   </main>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
+import FaceDetectionView from "./components/FaceDetectionView.vue";
 
 export default {
-  name: 'AppRoot',
+  name: "AppRoot",
   components: {
-    HelloWorld
-  }
-}
+    FaceDetectionView,
+  },
+};
 </script>
 
 <style>

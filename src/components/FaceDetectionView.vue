@@ -18,7 +18,7 @@ import { initFaceDetector, face_detection, draw_frame } from "../utils/face.js";
 import { createCameraAdapter } from "../utils/camera.js";
 
 export default {
-  name: "picojs",
+  name: "FaceDetectionView",
   data() {
     return {
       camEnabled: false,
@@ -64,8 +64,24 @@ export default {
         this.scheduleNextDetection(0);
       } catch (error) {
         this.camEnabled = false;
-        this.lastError = `camera start failed: ${error.message}`;
+        this.lastError = this.toCameraErrorMessage(error);
         return;
+      }
+    },
+    toCameraErrorMessage(error) {
+      switch (error && error.code) {
+        case "INSECURE_CONTEXT":
+          return "camera start failed: HTTPS (or localhost) is required";
+        case "PERMISSION_DENIED":
+          return "camera start failed: permission denied";
+        case "DEVICE_NOT_FOUND":
+          return "camera start failed: no camera device found";
+        case "DEVICE_BUSY":
+          return "camera start failed: device is busy";
+        case "CONSTRAINT_UNSATISFIED":
+          return "camera start failed: unsupported camera constraints";
+        default:
+          return `camera start failed: ${error.message}`;
       }
     },
     scheduleNextDetection(delay) {
