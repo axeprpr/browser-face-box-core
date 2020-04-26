@@ -1,6 +1,6 @@
 # vue-picojs
 
-Vue 3 + Vite + pico.js browser face detection demo with webcam capture.
+Vue 3 + Vite + pico.js browser face detection demo with native `getUserMedia` camera capture.
 
 ## Requirements
 

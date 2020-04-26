@@ -15,7 +15,7 @@
 
 <script>
 import { initFaceDetector, face_detection, draw_frame } from "../utils/face.js";
-import WebCamera from "webcamjs";
+import { createCameraAdapter } from "../utils/camera.js";
 
 export default {
   name: "picojs",
@@ -25,20 +25,14 @@ export default {
       detectorReady: false,
       isDetecting: false,
       loopTimer: null,
-      liveEventAttached: false,
       lastError: "",
       width: 640,
       height: 480,
-      camSet: {
-        width: 640,
-        height: 480,
-        image_format: "jpeg",
-        jpeg_quality: 80,
-        fps: 15,
-      },
+      camera: null,
     };
   },
   mounted() {
+    this.camera = createCameraAdapter();
     this.camInit();
   },
   beforeUnmount() {
@@ -59,19 +53,20 @@ export default {
         return;
       }
 
-      WebCamera.set(this.camSet);
-      if (!this.liveEventAttached) {
-        WebCamera.on("live", this.handleCameraLive);
-        this.liveEventAttached = true;
-      }
-      WebCamera.attach("#mycam");
-      this.camEnabled = true;
-    },
-    handleCameraLive() {
-      if (!this.camEnabled || this.loopTimer) {
+      try {
+        await this.camera.start({
+          containerId: "mycam",
+          width: this.width,
+          height: this.height,
+          facingMode: "user",
+        });
+        this.camEnabled = true;
+        this.scheduleNextDetection(0);
+      } catch (error) {
+        this.camEnabled = false;
+        this.lastError = `camera start failed: ${error.message}`;
         return;
       }
-      this.scheduleNextDetection(0);
     },
     scheduleNextDetection(delay) {
       if (this.loopTimer) {
@@ -82,13 +77,8 @@ export default {
     captureFrame() {
       return new Promise((resolve, reject) => {
         try {
-          WebCamera.snap((dataUri) => {
-            if (!dataUri) {
-              reject(new Error("empty frame"));
-              return;
-            }
-            resolve(dataUri);
-          });
+          const dataUri = this.camera.captureFrame("image/jpeg", 0.8);
+          resolve(dataUri);
         } catch (error) {
           reject(error);
         }
@@ -128,7 +118,9 @@ export default {
       }
 
       try {
-        WebCamera.reset();
+        if (this.camera) {
+          await this.camera.stop();
+        }
       } catch (_err) {
         // Ignore teardown errors so component unmount is stable.
       }
@@ -154,6 +146,12 @@ export default {
   position: absolute;
   width: 640px;
   height: 480px;
+  overflow: hidden;
+}
+.face-camv :deep(.face-video) {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .face-camc {
   position: absolute;
