@@ -103,7 +103,7 @@ function pickBestDetection(detections, qThreshold) {
   }, null);
 }
 
-const draw_frame = function drawFrame(det, canvasId) {
+const draw_frame = function drawFrame(det, canvasId, drawOptions = {}) {
   const canvas = document.getElementById(canvasId);
   if (!canvas) {
     return;
@@ -121,11 +121,18 @@ const draw_frame = function drawFrame(det, canvasId) {
   ctx.beginPath();
   ctx.lineWidth = 3;
   ctx.strokeStyle = "DeepSkyBlue";
-  const x = det[1];
-  const y = det[0];
-  const r = det[2] / 2 + 2;
-  const capLen = 20;
+  const mirrorX = Boolean(drawOptions.mirrorX);
+  const xOffset = Number(drawOptions.xOffset || 0);
+  const rawX = det[1];
+  const cx = mirrorX ? ctx.canvas.width - rawX : rawX;
+  const cy = det[0];
+  const faceSize = det[2];
+  const r = faceSize / 2 + 2;
+  const x = cx + xOffset;
+  const y = cy;
+  const capLen = Math.max(12, Math.round(faceSize * 0.18));
   const yFix = 1.1;
+
   ctx.moveTo(x - r, y - r);
   ctx.lineTo(x - r + capLen, y - r);
   ctx.moveTo(x - r, y - r - yFix);

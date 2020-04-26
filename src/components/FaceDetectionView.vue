@@ -28,6 +28,28 @@ export default {
       lastError: "",
       width: 640,
       height: 480,
+      detectOptions: {
+        shiftfactor: 0.12,
+        scalefactor: 1.2,
+        maxsize: 800,
+      },
+      fallbackDetectOptions: {
+        shiftfactor: 0.1,
+        scalefactor: 1.1,
+        maxsize: 1200,
+      },
+      detectQThreshold: 4.5,
+      fallbackQThreshold: 2.5,
+      detectIouThreshold: 0.2,
+      frameIndex: 0,
+      smoothedDet: null,
+      lostFrames: 0,
+      smoothAlpha: 0.35,
+      maxHoldFrames: 6,
+      drawOptions: {
+        mirrorX: false,
+        xOffset: 0,
+      },
       camera: null,
     };
   },
@@ -37,7 +59,7 @@ export default {
   },
   beforeUnmount() {
     this.camStop();
-    draw_frame(null, "ctx");
+    draw_frame(null, "ctx", this.drawOptions);
   },
   methods: {
     async camInit() {
@@ -93,12 +115,38 @@ export default {
     captureFrame() {
       return new Promise((resolve, reject) => {
         try {
-          const dataUri = this.camera.captureFrame("image/jpeg", 0.8);
+          const dataUri = this.camera.captureFrame("image/png");
           resolve(dataUri);
         } catch (error) {
           reject(error);
         }
       });
+    },
+    smoothDetection(det) {
+      if (!det) {
+        this.lostFrames += 1;
+        if (this.lostFrames <= this.maxHoldFrames && this.smoothedDet) {
+          return this.smoothedDet;
+        }
+        this.smoothedDet = null;
+        return null;
+      }
+
+      this.lostFrames = 0;
+      if (!this.smoothedDet) {
+        this.smoothedDet = [...det];
+        return this.smoothedDet;
+      }
+
+      const a = this.smoothAlpha;
+      const prev = this.smoothedDet;
+      this.smoothedDet = [
+        prev[0] * (1 - a) + det[0] * a,
+        prev[1] * (1 - a) + det[1] * a,
+        prev[2] * (1 - a) + det[2] * a,
+        det[3],
+      ];
+      return this.smoothedDet;
     },
     async runDetectionTick() {
       if (!this.camEnabled || !this.detectorReady) {
@@ -112,16 +160,31 @@ export default {
       this.isDetecting = true;
       try {
         const dataUri = await this.captureFrame();
-        const det = await face_detection(dataUri);
-        draw_frame(det, "ctx");
+        let det = await face_detection(
+          dataUri,
+          this.detectOptions,
+          this.detectQThreshold,
+          this.detectIouThreshold
+        );
+        this.frameIndex += 1;
+        if (!det && this.frameIndex % 3 === 0) {
+          det = await face_detection(
+            dataUri,
+            this.fallbackDetectOptions,
+            this.fallbackQThreshold,
+            this.detectIouThreshold
+          );
+        }
+        const stableDet = this.smoothDetection(det);
+        draw_frame(stableDet, "ctx", this.drawOptions);
         this.lastError = "";
       } catch (error) {
         this.lastError = `detect failed: ${error.message}`;
-        draw_frame(null, "ctx");
+        draw_frame(null, "ctx", this.drawOptions);
       } finally {
         this.isDetecting = false;
         if (this.camEnabled) {
-          this.scheduleNextDetection(150);
+          this.scheduleNextDetection(16);
         }
       }
     },
@@ -160,17 +223,24 @@ export default {
 }
 .face-camv {
   position: absolute;
+  top: 0;
+  left: 0;
   width: 640px;
   height: 480px;
   overflow: hidden;
 }
 .face-camv :deep(.face-video) {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: fill;
 }
 .face-camc {
   position: absolute;
+  top: 0;
+  left: 0;
   z-index: 3;
 }
 .face-status {

@@ -121,6 +121,8 @@ function getContainer(containerId) {
 export function createCameraAdapter() {
   let stream = null;
   let video = null;
+  let targetWidth = 640;
+  let targetHeight = 480;
   const snapshotCanvas = document.createElement("canvas");
   const snapshotContext = snapshotCanvas.getContext("2d");
 
@@ -140,6 +142,8 @@ export function createCameraAdapter() {
 
     const container = getContainer(containerId);
     await stop();
+    targetWidth = width;
+    targetHeight = height;
 
     const attempts = [
       {
@@ -175,8 +179,8 @@ export function createCameraAdapter() {
           await waitForVideoReady(video);
           await video.play();
 
-          snapshotCanvas.width = video.videoWidth || width;
-          snapshotCanvas.height = video.videoHeight || height;
+          snapshotCanvas.width = targetWidth;
+          snapshotCanvas.height = targetHeight;
           return;
         } catch (error) {
           await stop();
@@ -213,8 +217,8 @@ export function createCameraAdapter() {
       throw new Error("camera is not started");
     }
 
-    const frameWidth = video.videoWidth || snapshotCanvas.width;
-    const frameHeight = video.videoHeight || snapshotCanvas.height;
+    const frameWidth = targetWidth;
+    const frameHeight = targetHeight;
     if (!frameWidth || !frameHeight) {
       throw new Error("video frame is not ready");
     }
