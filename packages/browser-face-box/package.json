@@ -1,0 +1,29 @@
+{
+  "name": "@axeprpr/browser-face-box",
+  "version": "0.1.0-beta.1",
+  "description": "Browser face detection box with camera capture and screenshot compare",
+  "type": "module",
+  "main": "./src/index.js",
+  "module": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./facefinder.bin": "./facefinder.bin"
+  },
+  "files": [
+    "src",
+    "facefinder.bin",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "face-detection",
+    "face-compare",
+    "webcam",
+    "browser",
+    "picojs"
+  ],
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  }
+}

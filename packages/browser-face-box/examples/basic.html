@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>browser-face-box example</title>
+    <style>
+      #stage { position: relative; width: 640px; height: 480px; }
+      #camera, #overlay { position: absolute; top: 0; left: 0; width: 640px; height: 480px; }
+    </style>
+  </head>
+  <body>
+    <div id="stage">
+      <div id="camera"></div>
+      <canvas id="overlay" width="640" height="480"></canvas>
+    </div>
+    <input id="upload" type="file" accept="image/*" />
+    <pre id="result"></pre>
+
+    <script type="module">
+      import {
+        createFaceTracker,
+        compareFaceSources,
+      } from "../src/index.js";
+
+      const tracker = createFaceTracker({
+        cascadeUrl: "../facefinder.bin",
+      });
+
+      const overlay = document.getElementById("overlay");
+      await tracker.start({ containerId: "camera", overlayCanvas: overlay });
+
+      const upload = document.getElementById("upload");
+      const result = document.getElementById("result");
+      upload.addEventListener("change", async (event) => {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+        const frame = tracker.captureFrame("image/png");
+        const compared = await compareFaceSources(frame, file, { threshold: 0.72 });
+        result.textContent = JSON.stringify(compared, null, 2);
+      });
+    </script>
+  </body>
+</html>
