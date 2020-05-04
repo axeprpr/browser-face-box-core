@@ -13,7 +13,7 @@ It provides:
 ## Install
 
 ```bash
-npm i @axeprpr/browser-face-box
+npm i @axeprpr/browser-face-box@beta
 ```
 
 ## Quick Start
@@ -37,6 +37,13 @@ await tracker.start({
   width: 640,
   height: 480,
 });
+```
+
+Expected HTML structure:
+
+```html
+<div id="camera"></div>
+<canvas id="overlay" width="640" height="480"></canvas>
 ```
 
 ## Compare Uploaded Images

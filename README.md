@@ -2,6 +2,16 @@
 
 Vue 3 + Vite + pico.js browser face detection demo with native `getUserMedia` camera capture.
 
+## npm package
+
+Published package:
+- `@axeprpr/browser-face-box`
+- current tag: `beta`
+- install: `npm i @axeprpr/browser-face-box@beta`
+
+Package source and docs:
+- `packages/browser-face-box`
+
 ## Requirements
 
 - Node.js `>=16` (project currently validated on Node `24.7.0`)
@@ -21,6 +31,12 @@ npm run dev
 ```
 
 Open `http://localhost:5173` and allow camera access.
+
+For HTTPS local testing (recommended for camera permissions):
+
+```bash
+npm run dev:https
+```
 
 ## Quality gate
 
