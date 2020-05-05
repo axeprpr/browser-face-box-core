@@ -1,71 +1,37 @@
-# vue-picojs
+# browser-face-box-core
 
-Vue 3 + Vite + pico.js browser face detection demo with native `getUserMedia` camera capture.
+Core repository for the framework-agnostic browser face box package.
+
+## Repository name
+
+`browser-face-box-core` (already renamed)
 
 ## npm package
 
-Published package:
-- `@axeprpr/browser-face-box`
-- current tag: `beta`
+- package: `@axeprpr/browser-face-box`
+- current dist tag: `beta`
 - install: `npm i @axeprpr/browser-face-box@beta`
 
-Package source and docs:
+Package source:
 - `packages/browser-face-box`
 
-## Requirements
+## What this repo contains
 
-- Node.js `>=16` (project currently validated on Node `24.7.0`)
-- npm `>=8`
-- Browser with camera permission support
+- core browser package only (no framework-specific wrappers)
+- camera adapter (`getUserMedia`)
+- face detection + corner box drawing
+- upload/screenshot compare API
 
-## Install
+## Local maintenance
 
 ```bash
 npm install
-```
-
-## Run in development
-
-```bash
-npm run dev
-```
-
-Open `http://localhost:5173` and allow camera access.
-
-For HTTPS local testing (recommended for camera permissions):
-
-```bash
-npm run dev:https
-```
-
-## Quality gate
-
-```bash
 npm run lint
+npm run pack:core
 ```
 
-## E2E smoke test
+## Publish (when needed)
 
 ```bash
-npx playwright install chromium
-npm run test:e2e
+npm run publish:core:beta
 ```
-
-## Production build
-
-```bash
-npm run build
-npm run preview
-```
-
-Build output is generated in `dist/`.
-
-## Troubleshooting
-
-- If you see cascade loading errors, verify `public/facefinder.bin` exists in deployment assets.
-- If no face box is shown, check browser camera permission and HTTPS policy on your target host.
-- If using a non-root deployment path, keep Vue `BASE_URL` aligned with actual public path so `facefinder.bin` can be fetched correctly.
-
-## Migration plan
-
-- See `VUE3_MIGRATION_PLAN.md` for phased Vue 3 + Vite migration execution details.
